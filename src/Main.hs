@@ -70,7 +70,7 @@ run a sitename =
     upload (_, fileinfo) =
       if (BS.length content > fromIntegral (fromMBtoB 512))
         then return $ "File size too large: " <> filename <> "\n"
-        else doesFileExist path >>= (\x -> unless x $ BS.writeFile path content) >>
+        else doesFileExist path >>= flip unless (BS.writeFile path content) >>
              return (sitename <> h <> "\n")
       where
         content = fileContent fileinfo

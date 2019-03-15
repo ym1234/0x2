@@ -20,6 +20,6 @@ executable 0x2
   -- other-modules:
   -- other-extensions:
   -- Should probably pin these
-  build-depends:       base ^>=4.12.0.0, scotty, wai,  wai-extra, text, directory, bytestring, stm, cryptohash-sha256, hexstring, hexstring, unix-time, unix, filepath
+  build-depends:       base ^>=4.12.0.0, scotty, wai,  wai-extra, text, directory, bytestring, cryptohash-sha256, hexstring, unix-time, unix, filepath
   hs-source-dirs:      src
   default-language:    Haskell2010
