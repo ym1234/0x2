@@ -35,28 +35,31 @@ main = do
 toMicrosecond :: Int -> Int
 toMicrosecond a = a * 1000000 * 60 * 60
 
-fromMBtoB :: Int -> Int
-fromMBtoB a = a * 1024 * 1024
+maxSize :: Float
+maxSize = 512 * 1024 * 1024
 
 -- min_age + (-max_age + min_age) * pow((file_size / max_size - 1), 3)
-retention :: Integer -> Integer
-retention a = (1 + (-365 + 1) * (a `div` (512 - 1)) ^ 3) * 24 * 60 * 60
+retention :: Float -> Int
+retention a = round $ (1 + (-365 + 1) * (a / maxSize - 1) ^ 3) * 24 * 60 * 60
 
 cleanup :: String -> IO ()
 cleanup a =
   putStrLn "Starting cleanup" >> getDirectoryContents a >>=
-  void . sequence . fmap (checkFile . mappend a)
+  mapM_ (checkFile . mappend a) >>
+  putStrLn "Cleanup done"
 
+-- TODO(ym): Add some logging
 checkFile :: FilePath -> IO ()
 checkFile x = do
   y <- getFileStatus x
   when (not $ isDirectory y || x == "." || x == "..") $ do
-    filesize <- withFile x ReadMode hFileSize
+    fileRetention <-
+      retention <$> fromIntegral <$> withFile x ReadMode hFileSize
     currentTime <- getUnixTime
     when
       (diffUnixTime currentTime (fromEpochTime $ modificationTime y) >
-       secondsToUnixDiffTime (retention filesize)) $
-      removeLink x
+       secondsToUnixDiffTime fileRetention) $
+      putStrLn ("Removing file: " <> x) >> removeLink x
 
 run :: TL.Text -> TL.Text -> IO ()
 run a sitename =
@@ -68,7 +71,7 @@ run a sitename =
   where
     upload :: Web.Scotty.File -> IO TL.Text
     upload (_, fileinfo) =
-      if (BS.length content > fromIntegral (fromMBtoB 512))
+      if (BS.length content > (round maxSize))
         then return $ "File size too large: " <> filename <> "\n"
         else doesFileExist path >>= flip unless (BS.writeFile path content) >>
              return (sitename <> h <> "\n")
