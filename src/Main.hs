@@ -71,12 +71,12 @@ run a sitename =
   where
     upload :: Web.Scotty.File -> IO TL.Text
     upload (_, fileinfo) =
-      if (BS.length content > (round maxSize))
+      if BS.length content > round maxSize
         then return $ "File size too large: " <> filename <> "\n"
         else doesFileExist path >>= flip unless (BS.writeFile path content) >>
              return (sitename <> h <> "\n")
       where
         content = fileContent fileinfo
-        filename = decodeUtf8 $ BS.fromStrict $ fileName fileinfo
+        filename = decodeUtf8 . BS.fromStrict . fileName $ fileinfo
         h = TL.fromStrict . toText . fromBytes . hashlazy $ content
         path = TL.unpack $ a <> h
